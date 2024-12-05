@@ -1,3 +1,7 @@
-// run `node index.js` in the terminal
+const app = require('./src/server');
 
-console.log(`Hello Node.js v${process.versions.node}!`);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
