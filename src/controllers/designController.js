@@ -12,7 +12,7 @@ const serveStaticFiles = (req, res, next) => {
   express.static(publicPath)(req, res, next);
 };
 
-const create_user_design = async (req, res) => {
+const create_template = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -22,6 +22,10 @@ const create_user_design = async (req, res) => {
         .status(400)
         .json({ message: "Design components are required" });
     }
+    if (!req.body.title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
     let designComponents;
     try {
       designComponents = JSON.parse(req.body.design);
@@ -34,6 +38,7 @@ const create_user_design = async (req, res) => {
     const design = await TemplateModel.create({
       components: designComponents,
       image_url: req.file.path,
+      name: req.body.title,
     });
     return res.status(201).json({
       message: "Template created successfully",
@@ -47,7 +52,7 @@ const create_user_design = async (req, res) => {
   }
 };
 
-const update_user_design = async (req, res) => {
+const update_template = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -68,7 +73,7 @@ const update_user_design = async (req, res) => {
       });
     }
     const { design_id } = req.params;
-    const old_design = await DesignModel.findById(design_id);
+    const old_design = await TemplateModel.findById(design_id);
     if (!old_design) {
       return res.status(404).json({ message: "Design not found" });
     }
@@ -82,7 +87,7 @@ const update_user_design = async (req, res) => {
         fs.unlinkSync(oldImagePath);
       }
     }
-    await DesignModel.findByIdAndUpdate(
+    await TemplateModel.findByIdAndUpdate(
       design_id,
       {
         image_url: req.file.path,
@@ -110,15 +115,46 @@ const update_user_design = async (req, res) => {
   }
 };
 
-const get_user_design = async (req, res) => {
+const delete_template = async (req, res) => {
   const { design_id } = req.params;
+  if (!design_id) {
+    return res.status(400).json({ message: "Design ID is required" });
+  }
   try {
-    const design = await DesignModel.findById(design_id);
-    return res.status(200).json({ data: design.components });
+    const design = await TemplateModel.findByIdAndDelete(design_id);
+    if (!design) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+    return res.status(200).json({
+      message: "Template deleted successfully",
+      data: design.components,
+    });
+  } catch (error) {
+    console.error("Delete template error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+const get_templates = async (req, res) => {
+  try {
+    const templates = await TemplateModel.find().sort({ createdAt: -1 });
+    return res.status(200).json({ designs: templates });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
+
+
+// const delete_user_design = async (req, res) => {
+//   const { design_id } = req.params;
+//   try {
+//     await DesignModel.findByIdAndDelete(design_id);
+//     return res.status(200).json({ message: "design delete success" });
+//   } catch (error) {
+//     return res.status(500).json({ message: error.message });
+//   }
+// };
 
 const add_user_image = async (req, res) => {
   if (!req.file) {
@@ -132,7 +168,6 @@ const add_user_image = async (req, res) => {
     image_url: req.file.path,
   });
   return res.status(201).json({ data: userImage._id });
-
 };
 
 const get_user_image = async (req, res) => {
@@ -163,36 +198,27 @@ get_background_image = async (req, res) => {
   }
 };
 
-const get_user_designs = async (req, res) => {
-  const { userId } = req.user;
-  try {
-    const designs = await DesignModel.find({
-      user_id: new ObjectId(userId),
-    }).sort({ createdAt: -1 }).select('-components');
-    return res.status(200).json({ designs });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const delete_user_image = async (req, res) => {
+const get_user_design = async (req, res) => {
   const { design_id } = req.params;
   try {
-    await DesignModel.findByIdAndDelete(design_id);
-    return res.status(200).json({ message: "design delete success" });
+    const design = await TemplateModel.findById(design_id);
+    return res.status(200).json({ data: design.components });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-const get_templates = async (req, res) => {
-  try {
-    const templates = await TemplateModel.find({}).sort({ createdAt: -1 });
-    return res.status(200).json({ templates });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
+// const delete_user_image = async (req, res) => {
+//   const { design_id } = req.params;
+//   try {
+//     await DesignModel.findByIdAndDelete(design_id);
+//     return res.status(200).json({ message: "design delete success" });
+//   } catch (error) {
+//     return res.status(500).json({ message: error.message });
+//   }
+// };
+
+
 
 const add_user_template = async (req, res) => {
   const { template_id } = req.params;
@@ -212,12 +238,13 @@ const add_user_template = async (req, res) => {
 
 module.exports = {
   serveStaticFiles,
-  create_user_design,
-  get_user_design,
-  update_user_design,
+  create_template,
+  update_template,
+  delete_template,
+
   add_user_template,
-  get_user_designs,
-  delete_user_image,
+  get_user_design,
+  // delete_user_image,
   add_user_image,
-  get_templates
+  get_templates,
 };

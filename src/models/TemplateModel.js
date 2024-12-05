@@ -1,6 +1,9 @@
 const { model, Schema } = require('mongoose')
 
 const template_schema = new Schema({
+    name:{
+        type:String,
+    },
     components: {
         type: Array,
         default: []

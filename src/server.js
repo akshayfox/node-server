@@ -9,7 +9,6 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 connectDB();
 
 // const fs = require('fs');
@@ -26,8 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', uploadRoutes);
 app.use('/api/designs', designRoutes);
-// app.use(express.static(path.join(__dirname, "..", "uploads")));
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static('uploads'));
 
 
